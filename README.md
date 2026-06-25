@@ -46,9 +46,26 @@ Click **Download** to save the edited file back to your computer with the origin
 
 ---
 
+## Syncing preview edits to your template
+
+The recommended workflow is to edit your **preview file** (which shows real data) until the layout is right, then use **⇄ Sync to Template…** to apply those structural changes to your Liquid template automatically.
+
+1. Open and edit your preview file until it looks the way you want
+2. Click **⇄ Sync to Template…** in the toolbar
+3. Select your template file when prompted
+4. The editor matches each top-level section by its CSS class, reorders the template to mirror the preview, and downloads the result
+
+**What gets synced:**
+- Section order is updated to match the preview
+- Sections deleted in the preview are removed from the template
+- Sections added in the preview that don't exist in the template are included with a `<!-- TODO -->` comment so you know where to add Liquid variables
+- CSS changes made in the preview (borders, fonts, spacing) are carried across to the template automatically
+
+---
+
 ## Liquid template support
 
-When editing a template file, Liquid output tags (`{{merge_variables.xxx}}`) are displayed as non-editable chips (e.g. `⟨temperature⟩`) and control tags (`{% if ... %}`) are shown inline. Both are restored faithfully on download.
+When editing a template file directly, Liquid output tags (`{{merge_variables.xxx}}`) are displayed as non-editable chips (e.g. `⟨temperature⟩`) and control tags (`{% if ... %}`) are shown inline. Both are restored faithfully on download.
 
 ---
 
