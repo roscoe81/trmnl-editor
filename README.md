@@ -68,12 +68,6 @@ When editing a template file, Liquid output tags (`{{merge_variables.xxx}}`) are
 
 ---
 
-## Running locally (optional)
-
-If you prefer to run the editor locally rather than using the hosted version, simply open `index.html` directly in your browser — no server needed.
-
----
-
 ## Compatibility
 
 Works in any modern browser (Chrome, Firefox, Safari, Edge). Drag-to-reorder uses [SortableJS](https://github.com/SortableJS/Sortable).
