@@ -85,6 +85,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button class="btn" onclick="openFile()">📂 Open…</button>
   <span class="mode-badge none" id="mode-badge">NO FILE</span>
   <div class="spacer"></div>
+  <button class="btn" id="btn-sync" onclick="syncToTemplate()" disabled title="Apply preview structure to template file">⇄ Sync to Template…</button>
   <button class="btn primary" id="btn-download" onclick="downloadFile()" disabled>⬇ Download</button>
 </div>
 
@@ -210,7 +211,7 @@ async function downloadFile() {
     if (isTemplate) body = decodeLiquid(body);
 
     const comment = isTemplate
-      ? '<!-- BOM Weather TRMNL Plugin Template -->\n<!-- Paste this into the Markup field of your TRMNL Private Plugin -->'
+      ? '<!-- TRMNL Plugin Template -->\n<!-- Paste this into the Markup field of your TRMNL Private Plugin -->'
       : '<!-- TRMNL Preview — sample data, open in browser at 100% zoom -->';
 
     const output = `${comment}\n<style>${rawCSS}\n</style>\n\n${body}\n`;
@@ -257,6 +258,7 @@ function processAndLoad(filename, raw) {
   renderAllClasses();
   updateModeBadge();
   document.getElementById('btn-download').disabled = false;
+  document.getElementById('btn-sync').disabled = isTemplate; // only enabled for preview files
   setStatus(`Opened ${filename} — click to select, double-click to edit text, drag to reorder`);
 }
 
@@ -607,6 +609,103 @@ function deleteSelected() {
   sendToFrame({ type: 'delete', eid: selectedEl.eid });
   handleDeselect();
   setStatus('Deleted element');
+}
+
+// ═══════════════════════════════════════════════════════
+//  Sync preview structure → template
+// ═══════════════════════════════════════════════════════
+
+async function syncToTemplate() {
+  if (!currentFilename || isTemplate) {
+    setStatus('Load a preview file first, then click Sync to Template');
+    return;
+  }
+  setStatus('Reading preview structure…');
+  let previewContent;
+  try {
+    previewContent = await getFrameContent();
+  } catch(e) {
+    setStatus('Could not read preview: ' + e.message);
+    return;
+  }
+  setStatus('Select your template file…');
+  const picked = await pickFile();
+  if (!picked) { setStatus('Sync cancelled'); return; }
+
+  const { filename, content: templateRaw } = picked;
+  const tmplBody = templateRaw.replace(/^[\s\S]*?<\/style>\s*/, '').trim();
+
+  const { html: syncedBody, added, removed } = matchAndSync(previewContent.body, tmplBody);
+
+  const comment = '<!-- TRMNL Plugin Template -->\n<!-- Paste this into the Markup field of your TRMNL Private Plugin -->';
+  const output  = `${comment}\n<style>${rawCSS}\n</style>\n\n${syncedBody}\n`;
+  const blob    = new Blob([output], { type: 'text/html' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href        = url;
+  a.download    = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  let msg = `Synced template saved as ${filename}`;
+  if (added)   msg += ` — ${added} new section(s) marked TODO`;
+  if (removed) msg += ` — ${removed} section(s) removed`;
+  setStatus(msg + ' ✓');
+}
+
+function pickFile() {
+  return new Promise(resolve => {
+    const input    = document.createElement('input');
+    input.type     = 'file';
+    input.accept   = '.html';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) { resolve(null); return; }
+      const reader   = new FileReader();
+      reader.onload  = ev => resolve({ filename: file.name, content: ev.target.result });
+      reader.readAsText(file);
+    };
+    input.click();
+  });
+}
+
+function matchAndSync(previewHtml, templateHtml) {
+  const parser      = new DOMParser();
+  const previewDoc  = parser.parseFromString(`<!DOCTYPE html><html><body>${previewHtml}</body></html>`, 'text/html');
+  const templateDoc = parser.parseFromString(`<!DOCTYPE html><html><body>${templateHtml}</body></html>`, 'text/html');
+
+  const previewEls  = Array.from(previewDoc.body.children);
+  const templateEls = Array.from(templateDoc.body.children);
+
+  function sectionKey(el) {
+    const cls = Array.from(el.classList).sort().join(' ');
+    return cls || el.tagName.toLowerCase() + (el.id ? '#' + el.id : '');
+  }
+
+  const used  = new Set();
+  const lines = [];
+  let added = 0, removed = 0;
+
+  previewEls.forEach(previewEl => {
+    const key      = sectionKey(previewEl);
+    const matchIdx = templateEls.findIndex((el, i) => !used.has(i) && sectionKey(el) === key);
+    if (matchIdx >= 0) {
+      used.add(matchIdx);
+      lines.push(templateEls[matchIdx].outerHTML);
+    } else {
+      lines.push(`<!-- TODO: section added in preview — replace hardcoded values with Liquid variables -->`);
+      lines.push(previewEl.outerHTML);
+      added++;
+    }
+  });
+
+  const droppedKeys = templateEls.filter((_, i) => !used.has(i)).map(el => sectionKey(el));
+  if (droppedKeys.length) {
+    lines.push(`<!-- Sections removed (were in template but not in preview): ${droppedKeys.join(', ')} -->`);
+    removed = droppedKeys.length;
+  }
+
+  return { html: lines.join('\n'), added, removed };
 }
 
 function setStatus(msg) { document.getElementById('statusbar').textContent = msg; }
