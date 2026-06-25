@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TRMNL Editor</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a1a; color: #eee; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── Toolbar ── */
+.toolbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #252525; border-bottom: 1px solid #3a3a3a; flex-shrink: 0; }
+.toolbar-title { font-weight: 700; font-size: 13px; color: #fff; margin-right: 4px; letter-spacing: 0.02em; }
+.mode-badge { font-size: 9px; padding: 2px 6px; border-radius: 3px; background: #1a4a1a; color: #6f6; letter-spacing: 0.08em; font-weight: 600; }
+.mode-badge.template { background: #3a1a3a; color: #f6f; }
+.mode-badge.none { background: #333; color: #666; }
+.spacer { flex: 1; }
+.btn { padding: 4px 12px; border-radius: 4px; border: 1px solid #444; background: #333; color: #ccc; cursor: pointer; font-size: 11px; transition: background 0.1s; }
+.btn:hover { background: #444; color: #fff; }
+.btn.primary { background: #0055bb; border-color: #0044aa; color: #fff; }
+.btn.primary:hover { background: #0066cc; }
+.btn.danger { background: #330000; border-color: #550000; color: #f88; }
+.btn.danger:hover { background: #440000; color: #faa; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Main layout ── */
+.main { display: flex; flex: 1; min-height: 0; }
+
+/* ── Left panel ── */
+.panel-left { width: 170px; flex-shrink: 0; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; overflow: hidden; }
+.panel-section { padding: 8px; border-bottom: 1px solid #2a2a2a; }
+.panel-section.grow { flex: 1; overflow-y: auto; }
+.panel-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: #666; margin-bottom: 6px; font-weight: 600; }
+.palette-item { padding: 5px 8px; margin-bottom: 2px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 3px; cursor: pointer; font-size: 11px; color: #aaa; user-select: none; }
+.palette-item:hover { background: #333; border-color: #0055bb; color: #fff; }
+.palette-item:active { background: #0044aa; color: #fff; }
+
+/* ── Canvas ── */
+.canvas-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 16px; background: #111; overflow: auto; min-width: 0; }
+.canvas-label { font-size: 9px; color: #555; margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase; }
+.canvas-shadow { box-shadow: 0 6px 32px rgba(0,0,0,0.7); }
+#canvas-frame { width: 800px; height: 480px; border: none; display: block; background: #fff; }
+
+/* ── Drop zone (shown when no file loaded) ── */
+.drop-zone { width: 800px; height: 480px; border: 2px dashed #333; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #555; background: #161616; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
+.drop-zone:hover, .drop-zone.drag-over { border-color: #0055bb; color: #88aaee; }
+.drop-zone-icon { font-size: 40px; opacity: 0.5; }
+.drop-zone-text { font-size: 14px; }
+.drop-zone-sub { font-size: 11px; opacity: 0.6; }
+
+/* ── Right panel ── */
+.panel-right { width: 230px; flex-shrink: 0; background: #1e1e1e; border-left: 1px solid #333; display: flex; flex-direction: column; overflow: hidden; }
+.props-section { padding: 8px; border-bottom: 1px solid #2a2a2a; }
+.props-section.grow { flex: 1; overflow-y: auto; }
+.props-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: #666; margin-bottom: 6px; font-weight: 600; }
+.props-empty { font-size: 11px; color: #444; font-style: italic; }
+.prop-row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.prop-label { font-size: 10px; color: #777; min-width: 72px; flex-shrink: 0; font-family: monospace; }
+.prop-input { flex: 1; background: #2a2a2a; border: 1px solid #3a3a3a; color: #ddd; padding: 2px 5px; border-radius: 3px; font-size: 10px; font-family: monospace; min-width: 0; }
+.prop-input:focus { outline: none; border-color: #0055bb; background: #2f2f2f; }
+.class-chip { display: inline-block; padding: 2px 6px; background: #001a33; border: 1px solid #003366; border-radius: 3px; font-size: 10px; color: #5599ee; margin: 2px 2px 2px 0; cursor: pointer; font-family: monospace; }
+.class-chip:hover { background: #002244; border-color: #0055bb; }
+.class-chip.selected { background: #0044aa; border-color: #0066cc; color: #fff; }
+.css-rule { margin-bottom: 6px; }
+.css-rule-selector { font-size: 10px; color: #5599ee; font-family: monospace; cursor: pointer; padding: 2px 4px; background: #001a33; border-radius: 2px; margin-bottom: 2px; display: flex; align-items: center; gap: 4px; }
+.css-rule-selector:hover { background: #002244; }
+.css-rule-arrow { font-size: 8px; color: #555; transition: transform 0.1s; }
+.css-rule-arrow.open { transform: rotate(90deg); }
+.css-rule-body { display: none; padding: 4px 0 0 4px; }
+.css-rule-body.open { display: block; }
+.add-prop-row { display: flex; gap: 3px; margin-top: 3px; }
+.add-prop-row input { flex: 1; background: #222; border: 1px solid #333; color: #aaa; padding: 2px 4px; border-radius: 2px; font-size: 10px; font-family: monospace; }
+.add-prop-row button { padding: 2px 6px; background: #002244; border: 1px solid #003366; color: #88aaee; border-radius: 2px; cursor: pointer; font-size: 10px; }
+.new-class-row { display: flex; gap: 4px; margin-bottom: 6px; }
+.new-class-row input { flex: 1; background: #2a2a2a; border: 1px solid #3a3a3a; color: #ddd; padding: 3px 6px; border-radius: 3px; font-size: 11px; font-family: monospace; }
+.new-class-row input:focus { outline: none; border-color: #0055bb; }
+
+/* ── Status bar ── */
+.statusbar { padding: 3px 12px; background: #111; border-top: 1px solid #2a2a2a; font-size: 10px; color: #555; flex-shrink: 0; font-family: monospace; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="toolbar-title">TRMNL Editor</span>
+  <button class="btn" onclick="openFile()">📂 Open…</button>
+  <span class="mode-badge none" id="mode-badge">NO FILE</span>
+  <div class="spacer"></div>
+  <button class="btn primary" id="btn-download" onclick="downloadFile()" disabled>⬇ Download</button>
+</div>
+
+<div class="main">
+
+  <!-- ── Left: palette ── -->
+  <div class="panel-left">
+    <div class="panel-section">
+      <div class="panel-title">Add Element</div>
+      <div class="palette-item" onclick="insertElement('sensor-section')">＋ Sensor Section</div>
+      <div class="palette-item" onclick="insertElement('sensor-row')">＋ Sensor Row</div>
+      <div class="palette-item" onclick="insertElement('cal-event')">＋ Calendar Event</div>
+      <div class="palette-item" onclick="insertElement('forecast-col')">＋ Forecast Column</div>
+      <div class="palette-item" onclick="insertElement('footer-block')">＋ Footer Block</div>
+      <div class="palette-item" onclick="insertElement('footer-sep')">＋ Separator</div>
+      <div class="palette-item" onclick="insertElement('elec-col-sep')">＋ Elec Separator</div>
+      <div class="palette-item" onclick="insertElement('stat-block')">＋ Stat Block</div>
+      <div class="palette-item" onclick="insertElement('section-label')">＋ Section Label</div>
+      <div class="palette-item" onclick="insertElement('custom-div')">＋ Custom Div</div>
+    </div>
+    <div class="panel-section grow">
+      <div class="panel-title">Drag to Reorder</div>
+      <div style="font-size:10px;color:#555;line-height:1.6;">
+        Drag any element in the canvas to reorder it within its parent.
+        <br><br>
+        Sections, sensor rows, calendar events, forecast columns, and footer blocks are all sortable.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Canvas ── -->
+  <div class="canvas-wrap" id="canvas-wrap">
+    <div class="canvas-label" id="canvas-label">800 × 480 — TRMNL E-ink Display</div>
+    <div id="drop-zone" class="drop-zone" onclick="openFile()">
+      <div class="drop-zone-icon">📄</div>
+      <div class="drop-zone-text">Open a TRMNL HTML file</div>
+      <div class="drop-zone-sub">Click here or drag &amp; drop a .html file</div>
+    </div>
+    <div class="canvas-shadow" id="canvas-shadow" style="display:none;">
+      <iframe id="canvas-frame" title="TRMNL Canvas"></iframe>
+    </div>
+  </div>
+
+  <!-- ── Right: properties ── -->
+  <div class="panel-right">
+
+    <div class="props-section">
+      <div class="props-title">Selected Element</div>
+      <div id="selected-tag" class="props-empty">Open a file to begin</div>
+      <div id="selected-classes" style="margin-top:4px;"></div>
+      <div id="selected-actions" style="margin-top:6px;display:none;">
+        <button class="btn danger" style="width:100%;font-size:10px;padding:3px;" onclick="deleteSelected()">🗑 Delete</button>
+      </div>
+    </div>
+
+    <div class="props-section" id="border-section" style="display:none;">
+      <div class="props-title">Borders &amp; Style</div>
+      <div id="border-props"></div>
+    </div>
+
+    <div class="props-section" id="class-edit-section" style="display:none;">
+      <div class="props-title">Class: <span id="class-edit-name" style="color:#5599ee;font-family:monospace;"></span></div>
+      <div id="class-edit-props"></div>
+      <div class="add-prop-row">
+        <input type="text" id="new-prop-name" placeholder="property" />
+        <input type="text" id="new-prop-val" placeholder="value" />
+        <button onclick="addCSSProp()">+</button>
+      </div>
+    </div>
+
+    <div class="props-section">
+      <div class="props-title">New CSS Class</div>
+      <div class="new-class-row">
+        <input type="text" id="new-class-name" placeholder=".my-class" />
+        <button class="btn" onclick="createCSSClass()" style="padding:3px 8px;font-size:10px;">Create</button>
+      </div>
+    </div>
+
+    <div class="props-section grow">
+      <div class="props-title">All CSS Classes</div>
+      <div id="all-classes"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="statusbar" id="statusbar">Open a TRMNL HTML file to begin editing.</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  State
+// ═══════════════════════════════════════════════════════
+let currentFilename = null;
+let isTemplate      = false;
+let rawCSS          = '';
+let cssRules        = {};
+let selectedEl      = null;
+let editingClass    = null;
+
+// ═══════════════════════════════════════════════════════
+//  File open / download  (replaces Flask server calls)
+// ═══════════════════════════════════════════════════════
+
+function openFile() {
+  const input = document.createElement('input');
+  input.type   = 'file';
+  input.accept = '.html';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => processAndLoad(file.name, ev.target.result);
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+async function downloadFile() {
+  setStatus('Preparing download…');
+  try {
+    const content = await getFrameContent();
+    let body = content.body;
+    if (isTemplate) body = decodeLiquid(body);
+
+    const comment = isTemplate
+      ? '<!-- BOM Weather TRMNL Plugin Template -->\n<!-- Paste this into the Markup field of your TRMNL Private Plugin -->'
+      : '<!-- TRMNL Preview — sample data, open in browser at 100% zoom -->';
+
+    const output = `${comment}\n<style>${rawCSS}\n</style>\n\n${body}\n`;
+    const blob   = new Blob([output], { type: 'text/html' });
+    const url    = URL.createObjectURL(blob);
+    const a      = document.createElement('a');
+    a.href       = url;
+    a.download   = currentFilename || 'trmnl.html';
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatus(`Downloaded ${currentFilename} ✓`);
+  } catch(e) {
+    setStatus(`Download error: ${e.message}`);
+    console.error(e);
+  }
+}
+
+// Drag-and-drop onto the page
+document.addEventListener('dragover', e => { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); });
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) document.getElementById('drop-zone').classList.remove('drag-over'); });
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (!file || !file.name.endsWith('.html')) { setStatus('Please drop an .html file'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => processAndLoad(file.name, ev.target.result);
+  reader.readAsText(file);
+});
+
+function processAndLoad(filename, raw) {
+  currentFilename = filename;
+  isTemplate      = filename.toLowerCase().includes('template');
+
+  const styleMatch = raw.match(/<style>([\s\S]*?)<\/style>/);
+  rawCSS   = styleMatch ? styleMatch[1] : '';
+  cssRules = parseCSS(rawCSS);
+
+  let body = raw.replace(/^[\s\S]*?<\/style>\s*/, '').trim();
+  if (isTemplate) body = encodeLiquid(body);
+
+  showCanvas();
+  loadIntoFrame(rawCSS, body);
+  renderAllClasses();
+  updateModeBadge();
+  document.getElementById('btn-download').disabled = false;
+  setStatus(`Opened ${filename} — click to select, double-click to edit text, drag to reorder`);
+}
+
+function showCanvas() {
+  document.getElementById('drop-zone').style.display   = 'none';
+  document.getElementById('canvas-shadow').style.display = 'block';
+}
+
+function updateModeBadge() {
+  const b = document.getElementById('mode-badge');
+  if (!currentFilename)   { b.textContent = 'NO FILE'; b.className = 'mode-badge none'; return; }
+  b.textContent = isTemplate ? 'TEMPLATE' : 'PREVIEW';
+  b.className   = 'mode-badge' + (isTemplate ? ' template' : '');
+}
+
+// ═══════════════════════════════════════════════════════
+//  Liquid encode / decode
+// ═══════════════════════════════════════════════════════
+
+function escAttr(s)   { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function unescAttr(s) { return s.replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&'); }
+
+function encodeLiquid(html) {
+  html = html.replace(/\{%-?\s*[\s\S]*?\s*-?%\}/g, m => {
+    const inner = m.replace(/^\{%-?\s*/,'').replace(/\s*-?%\}$/,'');
+    return `<span class="lq-tag" data-lq="${escAttr(m)}" contenteditable="false">{%​${inner}​%}</span>`;
+  });
+  html = html.replace(/\{\{([\s\S]*?)\}\}/g, (m, inner) => {
+    const label = inner.trim().replace(/^merge_variables\./,'').replace(/\s*\|.*/,'');
+    return `<span class="lq-var" data-lq="${escAttr(m)}" contenteditable="false">⟨${label}⟩</span>`;
+  });
+  return html;
+}
+
+function decodeLiquid(html) {
+  html = html.replace(/<span[^>]+class="lq-tag"[^>]+data-lq="([^"]*)"[^>]*>[\s\S]*?<\/span>/g, (_, lq) => unescAttr(lq));
+  html = html.replace(/<span[^>]+class="lq-var"[^>]+data-lq="([^"]*)"[^>]*>[\s\S]*?<\/span>/g, (_, lq) => unescAttr(lq));
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════
+//  CSS parsing / update
+// ═══════════════════════════════════════════════════════
+
+function parseCSS(css) {
+  const rules = {};
+  const re = /([^{@/*][^{]*)\{([^}]*)\}/g;
+  let m;
+  while ((m = re.exec(css)) !== null) {
+    const sel = m[1].trim();
+    if (!sel) continue;
+    const decls = {};
+    m[2].split(';').forEach(d => {
+      const ci = d.indexOf(':');
+      if (ci < 0) return;
+      const p = d.slice(0, ci).trim(), v = d.slice(ci + 1).trim();
+      if (p && v) decls[p] = v;
+    });
+    if (Object.keys(decls).length) rules[sel] = decls;
+  }
+  return rules;
+}
+
+function updateRawCSS(selector, prop, value) {
+  const esc    = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const ruleRe = new RegExp(`(${esc}\\s*\\{)([^}]*)(\\})`, 's');
+  if (ruleRe.test(rawCSS)) {
+    rawCSS = rawCSS.replace(ruleRe, (_, open, body, close) => {
+      const propRe = new RegExp(`(${prop}\\s*:\\s*)[^;]+`);
+      if (propRe.test(body)) {
+        body = value ? body.replace(propRe, `$1${value}`)
+                     : body.replace(new RegExp(`\\s*${prop}\\s*:[^;]+;?`), '');
+      } else if (value) {
+        body = body.trimEnd().replace(/;?$/, '; ') + `${prop}: ${value}`;
+      }
+      return open + body + close;
+    });
+  } else if (value) {
+    rawCSS += `\n${selector} { ${prop}: ${value}; }`;
+  }
+  cssRules = parseCSS(rawCSS);
+}
+
+function addCSSRule(selector, decls) {
+  const declStr = Object.entries(decls).map(([p,v]) => `  ${p}: ${v}`).join(';\n') + ';';
+  rawCSS += `\n${selector} {\n${declStr}\n}`;
+  cssRules = parseCSS(rawCSS);
+}
+
+// ═══════════════════════════════════════════════════════
+//  Frame management
+// ═══════════════════════════════════════════════════════
+
+function loadIntoFrame(css, body) {
+  document.getElementById('canvas-frame').srcdoc = buildSrcdoc(css, body);
+}
+
+function buildSrcdoc(css, body) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>${css}</style>
+<style>
+.trmnl-sel{outline:2px solid #0066cc!important;outline-offset:1px;}
+.trmnl-hov{outline:1px dashed #0066cc66!important;outline-offset:1px;}
+.sortable-ghost{opacity:.35;background:#0055bb22!important;}
+[contenteditable=true]{outline:2px solid #00aa44!important;background:#00331122!important;min-width:8px;min-height:1em;}
+.lq-var{display:inline-block;background:#001a44;color:#88aaee;padding:0 3px;border-radius:2px;font-size:9px;font-family:monospace;pointer-events:none;user-select:none;}
+.lq-tag{display:inline-block;background:#2a0033;color:#dd88ff;padding:0 3px;border-radius:2px;font-size:9px;font-family:monospace;pointer-events:none;user-select:none;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"><\/script>
+</head><body>
+${body}
+<script>(${FRAME_SCRIPT.toString()})()</\script>
+</body></html>`;
+}
+
+function sendToFrame(msg) {
+  const f = document.getElementById('canvas-frame');
+  if (f && f.contentWindow) f.contentWindow.postMessage(msg, '*');
+}
+
+function getFrameContent() {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('Timeout')), 4000);
+    const h = e => {
+      if (e.data && e.data.type === 'content') {
+        clearTimeout(t); window.removeEventListener('message', h); resolve(e.data);
+      }
+    };
+    window.addEventListener('message', h);
+    sendToFrame({ type: 'getContent' });
+  });
+}
+
+window.addEventListener('message', e => {
+  const msg = e.data;
+  if (!msg || !msg.type) return;
+  if (msg.type === 'select')   handleSelect(msg);
+  if (msg.type === 'deselect') handleDeselect();
+  if (msg.type === 'ready')    setStatus(`${currentFilename} ready — click to select, double-click to edit text, drag to reorder`);
+});
+
+// ═══════════════════════════════════════════════════════
+//  Selection & properties
+// ═══════════════════════════════════════════════════════
+
+function handleSelect(msg) {
+  selectedEl = msg;
+  document.getElementById('selected-tag').innerHTML =
+    `<code style="color:#5599ee;font-size:11px;">&lt;${msg.tag}&gt;</code>` +
+    (msg.id ? ` <code style="color:#666;font-size:10px;">#${msg.id}</code>` : '');
+
+  const cd = document.getElementById('selected-classes');
+  cd.innerHTML = '';
+  (msg.classes || []).forEach(cls => {
+    const c = document.createElement('span');
+    c.className = 'class-chip';
+    c.textContent = '.' + cls;
+    c.onclick = () => showClassEditor(cls);
+    cd.appendChild(c);
+  });
+
+  document.getElementById('selected-actions').style.display = 'block';
+  showBorderProps(msg.inlineStyle || {});
+}
+
+function handleDeselect() {
+  selectedEl = null;
+  document.getElementById('selected-tag').innerHTML = '<span class="props-empty">Click an element to select</span>';
+  document.getElementById('selected-classes').innerHTML = '';
+  document.getElementById('selected-actions').style.display = 'none';
+  document.getElementById('border-section').style.display = 'none';
+}
+
+function showBorderProps(inlineStyle) {
+  const sec = document.getElementById('border-section');
+  const con = document.getElementById('border-props');
+  sec.style.display = 'block';
+  con.innerHTML = '';
+  ['border','border-top','border-bottom','border-left','border-right',
+   'border-radius','border-color','border-width','border-style',
+   'background','background-color','padding','margin','width','height'].forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'prop-row';
+    const lbl = document.createElement('span');
+    lbl.className = 'prop-label';
+    lbl.textContent = p;
+    const inp = document.createElement('input');
+    inp.className = 'prop-input';
+    inp.value = inlineStyle[p] || '';
+    inp.placeholder = 'inherited';
+    inp.addEventListener('change', () => sendToFrame({ type: 'setInlineStyle', prop: p, value: inp.value }));
+    row.appendChild(lbl);
+    row.appendChild(inp);
+    con.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  CSS class editor
+// ═══════════════════════════════════════════════════════
+
+function showClassEditor(cls) {
+  editingClass = cls;
+  document.querySelectorAll('.class-chip').forEach(c =>
+    c.classList.toggle('selected', c.textContent === '.' + cls));
+  document.getElementById('class-edit-name').textContent = '.' + cls;
+  document.getElementById('class-edit-section').style.display = 'block';
+  renderClassProps(cls);
+}
+
+function renderClassProps(cls) {
+  const con = document.getElementById('class-edit-props');
+  con.innerHTML = '';
+  const decls = cssRules['.' + cls] || {};
+  const commonProps = ['font-size','font-weight','color','background','display','flex',
+    'flex-direction','align-items','justify-content','gap','padding','margin',
+    'border','border-bottom','border-top','border-left','border-right','border-radius',
+    'width','height','min-width','max-width','white-space','text-transform',
+    'letter-spacing','line-height','overflow'];
+  [...new Set([...Object.keys(decls), ...commonProps])].forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'prop-row';
+    const lbl = document.createElement('span');
+    lbl.className = 'prop-label';
+    lbl.textContent = p;
+    const inp = document.createElement('input');
+    inp.className = 'prop-input';
+    inp.value = decls[p] || '';
+    inp.placeholder = 'not set';
+    inp.addEventListener('change', () => {
+      updateRawCSS('.' + cls, p, inp.value);
+      sendToFrame({ type: 'updateCSS', css: rawCSS });
+      renderAllClasses();
+      setStatus(`Updated .${cls} { ${p}: ${inp.value} }`);
+    });
+    row.appendChild(lbl);
+    row.appendChild(inp);
+    con.appendChild(row);
+  });
+}
+
+function addCSSProp() {
+  if (!editingClass) return;
+  const p = document.getElementById('new-prop-name').value.trim();
+  const v = document.getElementById('new-prop-val').value.trim();
+  if (!p || !v) return;
+  updateRawCSS('.' + editingClass, p, v);
+  sendToFrame({ type: 'updateCSS', css: rawCSS });
+  renderClassProps(editingClass);
+  renderAllClasses();
+  document.getElementById('new-prop-name').value = '';
+  document.getElementById('new-prop-val').value = '';
+  setStatus(`Added .${editingClass} { ${p}: ${v} }`);
+}
+
+function createCSSClass() {
+  const inp = document.getElementById('new-class-name');
+  let sel = inp.value.trim();
+  if (!sel) return;
+  if (!sel.startsWith('.') && !sel.startsWith('#') && !sel.startsWith('*')) sel = '.' + sel;
+  addCSSRule(sel, {});
+  renderAllClasses();
+  sendToFrame({ type: 'updateCSS', css: rawCSS });
+  inp.value = '';
+  setStatus(`Created CSS class ${sel}`);
+  if (sel.startsWith('.')) showClassEditor(sel.slice(1));
+}
+
+function renderAllClasses() {
+  const con = document.getElementById('all-classes');
+  con.innerHTML = '';
+  Object.entries(cssRules).forEach(([sel, decls]) => {
+    const rule   = document.createElement('div');
+    rule.className = 'css-rule';
+    const header = document.createElement('div');
+    header.className = 'css-rule-selector';
+    const arrow  = document.createElement('span');
+    arrow.className = 'css-rule-arrow';
+    arrow.textContent = '▶';
+    header.appendChild(arrow);
+    header.appendChild(document.createTextNode(sel));
+    const body   = document.createElement('div');
+    body.className = 'css-rule-body';
+    header.onclick = () => { body.classList.toggle('open'); arrow.classList.toggle('open'); };
+    Object.entries(decls).forEach(([p, v]) => {
+      const row = document.createElement('div');
+      row.className = 'prop-row';
+      const lbl = document.createElement('span');
+      lbl.className = 'prop-label';
+      lbl.textContent = p;
+      const inp = document.createElement('input');
+      inp.className = 'prop-input';
+      inp.value = v;
+      inp.addEventListener('change', () => {
+        updateRawCSS(sel, p, inp.value);
+        sendToFrame({ type: 'updateCSS', css: rawCSS });
+        setStatus(`Updated ${sel} { ${p}: ${inp.value} }`);
+      });
+      row.appendChild(lbl);
+      row.appendChild(inp);
+      body.appendChild(row);
+    });
+    rule.appendChild(header);
+    rule.appendChild(body);
+    con.appendChild(rule);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  Insert / delete
+// ═══════════════════════════════════════════════════════
+
+const TEMPLATES = {
+  'sensor-section': `<div class="sensor-section">
+  <div class="sensor-heading">New Section</div>
+  <div class="sensor-row"><span class="sensor-name">Label</span><span class="sensor-val">Value</span></div>
+</div>`,
+  'sensor-row':   `<div class="sensor-row"><span class="sensor-name">Label</span><span class="sensor-val">Value</span></div>`,
+  'cal-event':    `<div class="cal-row"><span class="cal-time">9:00 AM</span><span class="cal-title">New Event</span></div>`,
+  'forecast-col': `<div class="forecast-col">
+  <div class="forecast-hour">Now</div>
+  <div class="forecast-temp">20°</div>
+  <div class="forecast-chance">0%</div>
+  <div class="forecast-bar-wrap"><div class="forecast-bar" style="width:0%"></div></div>
+</div>`,
+  'footer-block':  `<div class="footer-block"><span class="footer-lbl">Label</span><span class="footer-val">Value</span></div>`,
+  'footer-sep':    `<div class="footer-sep"></div>`,
+  'elec-col-sep':  `<div class="elec-col-sep"></div>`,
+  'stat-block':    `<div style="display:flex;flex-direction:column;align-items:center;padding:8px 12px;flex:1;">
+  <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#666;margin-bottom:4px;">Label</span>
+  <span style="font-size:28px;font-weight:900;line-height:1;">42</span>
+</div>`,
+  'section-label': `<div class="section-label">New Section</div>`,
+  'custom-div':    `<div style="padding:8px;border:1px solid #ccc;border-radius:4px;">Custom block</div>`,
+};
+
+function insertElement(name) {
+  if (!currentFilename) return;
+  const html = TEMPLATES[name];
+  if (!html) return;
+  sendToFrame({ type: 'insert', html, targetId: selectedEl ? selectedEl.eid : null });
+  setStatus(`Inserted ${name}`);
+}
+
+function deleteSelected() {
+  if (!selectedEl) return;
+  if (!confirm('Delete the selected element?')) return;
+  sendToFrame({ type: 'delete', eid: selectedEl.eid });
+  handleDeselect();
+  setStatus('Deleted element');
+}
+
+function setStatus(msg) { document.getElementById('statusbar').textContent = msg; }
+
+// ═══════════════════════════════════════════════════════
+//  Script injected into the iframe
+// ═══════════════════════════════════════════════════════
+
+function FRAME_SCRIPT() {
+  let counter = 0, selEl = null, hovEl = null;
+  document.querySelectorAll('*').forEach(el => { if (!el.dataset.eid) el.dataset.eid = 'e' + (++counter); });
+
+  function eid(el) { return el.dataset.eid || el.id || ''; }
+  function classes(el) { return Array.from(el.classList).filter(c => !c.startsWith('trmnl-') && c !== 'sortable-ghost'); }
+  function inlineStyle(el) {
+    const s = el.style, r = {};
+    ['border','border-top','border-bottom','border-left','border-right','border-radius',
+     'border-color','border-width','border-style','background','background-color',
+     'padding','margin','width','height'].forEach(p => { const v = s.getPropertyValue(p); if (v) r[p] = v; });
+    return r;
+  }
+  function sendSelect(el) {
+    window.parent.postMessage({ type:'select', eid:eid(el), id:el.id||'', tag:el.tagName.toLowerCase(), classes:classes(el), inlineStyle:inlineStyle(el) }, '*');
+  }
+  function selectEl(el) {
+    if (selEl) selEl.classList.remove('trmnl-sel');
+    selEl = el;
+    if (el) { el.classList.add('trmnl-sel'); sendSelect(el); }
+    else window.parent.postMessage({ type:'deselect' }, '*');
+  }
+
+  document.addEventListener('click', e => {
+    const t = e.target;
+    if (t === document.body || t === document.documentElement) { selectEl(null); return; }
+    if (t.classList.contains('lq-var') || t.classList.contains('lq-tag')) return;
+    e.stopPropagation();
+    selectEl(t);
+  });
+  document.addEventListener('mouseover', e => {
+    const t = e.target;
+    if (hovEl) { hovEl.classList.remove('trmnl-hov'); hovEl = null; }
+    if (t && t !== document.body) { t.classList.add('trmnl-hov'); hovEl = t; }
+  });
+  document.addEventListener('mouseout', () => { if (hovEl) { hovEl.classList.remove('trmnl-hov'); hovEl = null; } });
+
+  document.addEventListener('dblclick', e => {
+    const t = e.target;
+    if (t.classList.contains('lq-var') || t.classList.contains('lq-tag')) return;
+    const hasBlock = Array.from(t.children).some(c => ['DIV','P','UL','OL','TABLE'].includes(c.tagName));
+    if (hasBlock) return;
+    e.stopPropagation();
+    t.contentEditable = 'true';
+    t.focus();
+    const range = document.createRange();
+    range.selectNodeContents(t);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    t.addEventListener('blur', () => { t.contentEditable = 'false'; sendSelect(t); }, { once: true });
+    t.addEventListener('keydown', ev => { if (ev.key === 'Escape' || ev.key === 'Enter') { ev.preventDefault(); t.blur(); } });
+  });
+
+  function initSortable() {
+    if (typeof Sortable === 'undefined') { setTimeout(initSortable, 100); return; }
+    ['.right','.left','.forecast','.cal-section','.footer','.elec-cols','.sensor-section','.elec-block'].forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => Sortable.create(el, { animation: 120, ghostClass: 'sortable-ghost' }));
+    });
+  }
+  initSortable();
+
+  window.addEventListener('message', e => {
+    const msg = e.data;
+    if (!msg || !msg.type) return;
+    if (msg.type === 'getContent') {
+      const clone = document.body.cloneNode(true);
+      clone.querySelectorAll('.trmnl-sel,.trmnl-hov').forEach(el => el.classList.remove('trmnl-sel','trmnl-hov'));
+      clone.querySelectorAll('[data-eid]').forEach(el => el.removeAttribute('data-eid'));
+      window.parent.postMessage({ type:'content', body:clone.innerHTML }, '*');
+    }
+    else if (msg.type === 'updateCSS') {
+      const s = document.querySelectorAll('style')[0];
+      if (s) s.textContent = msg.css;
+    }
+    else if (msg.type === 'setInlineStyle') {
+      if (selEl) selEl.style.setProperty(msg.prop, msg.value);
+    }
+    else if (msg.type === 'insert') {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = msg.html.trim();
+      const newEl = tmp.firstElementChild;
+      if (!newEl) return;
+      newEl.dataset.eid = 'e' + (++counter);
+      if (msg.targetId) {
+        const ref = document.querySelector(`[data-eid="${msg.targetId}"]`);
+        if (ref && ref.parentElement) { ref.parentElement.insertBefore(newEl, ref.nextSibling); selectEl(newEl); return; }
+      }
+      document.body.appendChild(newEl);
+      selectEl(newEl);
+    }
+    else if (msg.type === 'delete') {
+      const el = document.querySelector(`[data-eid="${msg.eid}"]`);
+      if (el) { el.remove(); selectEl(null); }
+    }
+  });
+
+  window.parent.postMessage({ type:'ready' }, '*');
+}
+</script>
+</body>
+</html>
