@@ -8,7 +8,7 @@ A browser-based WYSIWYG editor for [TRMNL](https://usetrmnl.com) e-ink display t
 
 ## What it does
 
-TRMNL displays are 800×480 pixels. Editing the HTML/Liquid templates by hand is error-prone and hard to visualise. This editor gives you a live 800×480 canvas where you can:
+TRMNL displays are 800×480 pixels. Editing HTML/Liquid templates by hand is error-prone and hard to visualise. This editor gives you a live 800×480 canvas where you can:
 
 - **Click** any element to select it and inspect its CSS classes and inline styles
 - **Double-click** text to edit it in place
@@ -28,10 +28,10 @@ Go to https://roscoe81.github.io/trmnl-editor/ in any modern browser.
 
 ### 2. Load your file
 Either:
-- Click **Open File** and select your `bom_trmnl_preview.html` or `bom_trmnl_template.html`, or
+- Click **Open File** and select your TRMNL preview or template HTML file, or
 - **Drag and drop** the file onto the editor window
 
-The editor detects from the filename whether it's a preview or a Liquid template and handles each appropriately.
+The editor detects from the filename whether it's a preview or a Liquid template and handles each appropriately (files containing `template` in the filename are treated as Liquid templates).
 
 ### 3. Edit
 - **Select** an element by clicking it — its classes and styles appear in the right panel
@@ -42,13 +42,13 @@ The editor detects from the filename whether it's a preview or a Liquid template
 - **Adjust CSS** using the class properties fields in the right panel
 
 ### 4. Save your changes
-Click **Download** to save the edited file back to your computer with the original filename. For Liquid template files, all `{{merge_variables.xxx}}` and `{% %}` tags are restored exactly as they were.
+Click **Download** to save the edited file back to your computer with the original filename. For Liquid template files, all `{{merge_variables.xxx}}` and `{% %}` tags are restored exactly as they were — the file can be pasted directly into the TRMNL Private Plugin markup field without modification.
 
 ---
 
 ## Liquid template support
 
-When editing a `*template*.html` file, Liquid output tags (`{{merge_variables.xxx}}`) are displayed as non-editable chips (e.g. `⟨temperature⟩`) and control tags (`{% if ... %}`) are shown inline. Both are restored faithfully when you download — the file can be pasted directly into the TRMNL Private Plugin markup field without modification.
+When editing a template file, Liquid output tags (`{{merge_variables.xxx}}`) are displayed as non-editable chips (e.g. `⟨temperature⟩`) and control tags (`{% if ... %}`) are shown inline. Both are restored faithfully on download.
 
 ---
 
@@ -62,7 +62,6 @@ When editing a `*template*.html` file, Liquid output tags (`{{merge_variables.xx
 | Forecast column | A single day in a weather forecast strip |
 | Footer block | A labelled value in the footer bar |
 | Footer separator | A vertical divider between footer blocks |
-| Electricity col separator | Divider for electricity columns |
 | Stat block | A flex stat display block |
 | Section label | A section heading |
 | Custom div | A blank div to style freely |
@@ -77,4 +76,4 @@ If you prefer to run the editor locally rather than using the hosted version, si
 
 ## Compatibility
 
-Works in any modern browser (Chrome, Firefox, Safari, Edge). Drag-to-reorder requires a browser that supports the [SortableJS](https://github.com/SortableJS/Sortable) library (all major browsers do).
+Works in any modern browser (Chrome, Firefox, Safari, Edge). Drag-to-reorder uses [SortableJS](https://github.com/SortableJS/Sortable).
