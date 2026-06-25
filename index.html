@@ -22,8 +22,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .btn.danger:hover { background: #440000; color: #faa; }
 .btn:disabled { opacity: 0.4; cursor: default; }
 .new-menu { display:none; position:absolute; top:100%; left:0; margin-top:3px; background:#2a2a2a; border:1px solid #444; border-radius:4px; z-index:200; min-width:140px; box-shadow:0 4px 12px rgba(0,0,0,0.5); }
-.new-menu-item { padding:7px 14px; font-size:11px; color:#ccc; cursor:pointer; white-space:nowrap; }
+.new-menu-item { padding:6px 14px 6px 20px; font-size:11px; color:#ccc; cursor:pointer; white-space:nowrap; }
 .new-menu-item:hover { background:#333; color:#fff; }
+.new-menu-header { padding:6px 14px 3px; font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#555; border-top:1px solid #333; margin-top:2px; }
+.new-menu-header:first-child { border-top:none; margin-top:0; }
 
 /* ── Main layout ── */
 .main { display: flex; flex: 1; min-height: 0; }
@@ -88,8 +90,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div style="position:relative;display:inline-block;">
     <button class="btn" onclick="toggleNewMenu(event)">＋ New…</button>
     <div class="new-menu" id="new-menu">
-      <div class="new-menu-item" onclick="newFile(false)">New Preview</div>
-      <div class="new-menu-item" onclick="newFile(true)">New Template</div>
+      <div class="new-menu-header">Preview</div>
+      <div class="new-menu-item" onclick="newFile(false,'blank')">Blank</div>
+      <div class="new-menu-item" onclick="newFile(false,'two-col')">Two Column</div>
+      <div class="new-menu-item" onclick="newFile(false,'full-width')">Full Width</div>
+      <div class="new-menu-item" onclick="newFile(false,'stats-footer')">Stats + Footer</div>
+      <div class="new-menu-header">Template</div>
+      <div class="new-menu-item" onclick="newFile(true,'blank')">Blank</div>
+      <div class="new-menu-item" onclick="newFile(true,'two-col')">Two Column</div>
+      <div class="new-menu-item" onclick="newFile(true,'full-width')">Full Width</div>
+      <div class="new-menu-item" onclick="newFile(true,'stats-footer')">Stats + Footer</div>
     </div>
   </div>
   <button class="btn" onclick="openFile()">📂 Open…</button>
@@ -111,8 +121,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <div class="palette-item" onclick="insertElement('forecast-col')">＋ Forecast Column</div>
       <div class="palette-item" onclick="insertElement('footer-block')">＋ Footer Block</div>
       <div class="palette-item" onclick="insertElement('footer-sep')">＋ Separator</div>
-      <div class="palette-item" onclick="insertElement('elec-col-sep')">＋ Elec Separator</div>
+      <div class="palette-item" onclick="insertElement('col-sep')">＋ Col Separator</div>
       <div class="palette-item" onclick="insertElement('stat-block')">＋ Stat Block</div>
+      <div class="palette-item" onclick="insertElement('badge')">＋ Badge</div>
       <div class="palette-item" onclick="insertElement('section-label')">＋ Section Label</div>
       <div class="palette-item" onclick="insertElement('custom-div')">＋ Custom Div</div>
     </div>
@@ -193,20 +204,16 @@ body { font-family: sans-serif; background: #fff; color: #000; width: 800px; hei
 .page { padding: 16px 20px 12px; display: flex; flex-direction: column; height: 100%; }
 .header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 10px; flex-shrink: 0; }
 .header-title { font-size: 20px; font-weight: bold; letter-spacing: 0.04em; text-transform: uppercase; }
-.header-updated { font-size: 12px; color: #555; }
+.header-sub { font-size: 12px; color: #555; }
 .body { display: flex; gap: 16px; flex: 1; min-height: 0; }
 .left { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.current { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 10px; flex-shrink: 0; }
-.current-temp { font-size: 64px; font-weight: 900; line-height: 1; white-space: nowrap; }
-.current-temp sup { font-size: 28px; font-weight: 400; vertical-align: super; }
-.current-detail { display: flex; flex-direction: column; gap: 3px; flex: 1; padding-top: 6px; }
-.current-desc { font-size: 16px; font-weight: bold; }
-.current-meta { font-size: 12px; color: #444; }
-.rain-badge { text-align: center; border: 2px solid #000; border-radius: 6px; padding: 5px 10px; white-space: nowrap; flex-shrink: 0; }
-.rain-badge-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; }
-.rain-badge-value { font-size: 20px; font-weight: 900; line-height: 1.2; }
-.rain-badge-unit { font-size: 10px; }
+.right { width: 210px; flex-shrink: 0; border-left: 1px solid #bbb; padding-left: 14px; display: flex; flex-direction: column; }
 .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin-bottom: 6px; flex-shrink: 0; }
+.sensor-section { margin-bottom: 6px; }
+.sensor-heading { font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 3px; margin-bottom: 4px; }
+.sensor-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+.sensor-name { font-size: 11px; color: #555; }
+.sensor-val { font-size: 12px; font-weight: 700; }
 .forecast { display: flex; gap: 5px; flex: 0 0 82px; min-height: 0; }
 .forecast-col { flex: 1; border: 1px solid #ccc; border-radius: 5px; display: flex; flex-direction: column; align-items: center; padding: 6px 2px 5px; }
 .forecast-hour { font-size: 11px; color: #555; margin-bottom: 3px; }
@@ -220,35 +227,93 @@ body { font-family: sans-serif; background: #fff; color: #000; width: 800px; hei
 .cal-time { font-size: 11px; color: #555; white-space: nowrap; flex-shrink: 0; min-width: 45px; }
 .cal-title { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cal-empty { font-size: 12px; color: #999; font-style: italic; }
-.right { width: 210px; flex-shrink: 0; border-left: 1px solid #bbb; padding-left: 14px; display: flex; flex-direction: column; }
-.sensor-section { margin-bottom: 6px; }
-.sensor-heading { font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 3px; margin-bottom: 4px; }
-.sensor-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
-.sensor-name { font-size: 11px; color: #555; }
-.sensor-val { font-size: 12px; font-weight: 700; }
-.footer { border-top: 1px solid #bbb; margin-top: 6px; padding-top: 6px; display: flex; align-items: flex-start; flex-shrink: 0; min-height: 88px; }
-.footer-block { display: flex; flex-direction: column; align-items: center; flex: 0 0 90px; min-width: 0; padding-top: 6px; }
-.footer-lbl { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; margin-bottom: 1px; }
+.footer { border-top: 1px solid #bbb; margin-top: 6px; padding-top: 6px; display: flex; align-items: center; flex-shrink: 0; min-height: 60px; }
+.footer-block { display: flex; flex-direction: column; align-items: center; flex: 1; padding: 4px 8px; }
+.footer-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; margin-bottom: 2px; }
 .footer-val { font-size: 15px; font-weight: bold; }
-.footer-sep { width: 1px; height: 40px; background: #bbb; margin: 0 6px; flex-shrink: 0; }
-.elec-block { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
-.elec-heading { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; margin-bottom: 4px; }
-.elec-cols { display: flex; gap: 10px; align-items: flex-start; }
-.elec-col { display: flex; flex-direction: column; align-items: center; }
-.elec-col-sep { width: 1px; height: 28px; background: #ccc; align-self: center; margin: 0 4px; }
-.elec-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #777; white-space: nowrap; }
-.elec-val { font-size: 15px; font-weight: bold; white-space: nowrap; text-transform: none; }`;
+.footer-sep { width: 1px; background: #bbb; align-self: stretch; margin: 0 4px; flex-shrink: 0; }
+.stat-block { display: flex; flex-direction: column; align-items: center; flex: 1; padding: 8px 12px; }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; margin-bottom: 4px; }
+.stat-value { font-size: 32px; font-weight: 900; line-height: 1; }
+.badge { text-align: center; border: 2px solid #000; border-radius: 6px; padding: 5px 10px; flex-shrink: 0; }
+.badge-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; }
+.badge-value { font-size: 20px; font-weight: 900; line-height: 1.2; }
+.col-sep { width: 1px; background: #bbb; align-self: stretch; margin: 0 6px; flex-shrink: 0; }`;
 
-const NEW_BODY = `<div class="page">
+const NEW_LAYOUTS = {
+  'blank': `<div class="page">
   <div class="header">
     <span class="header-title">My Display</span>
-    <span class="header-updated">Updated now</span>
+    <span class="header-sub">Updated now</span>
   </div>
   <div class="body">
     <div class="left">
     </div>
   </div>
-</div>`;
+</div>`,
+  'two-col': `<div class="page">
+  <div class="header">
+    <span class="header-title">My Display</span>
+    <span class="header-sub">Updated now</span>
+  </div>
+  <div class="body">
+    <div class="left">
+    </div>
+    <div class="right">
+    </div>
+  </div>
+</div>`,
+  'full-width': `<div class="page">
+  <div class="header">
+    <span class="header-title">My Display</span>
+    <span class="header-sub">Updated now</span>
+  </div>
+  <div class="body">
+    <div class="left" style="gap:12px;">
+    </div>
+  </div>
+</div>`,
+  'stats-footer': `<div class="page">
+  <div class="header">
+    <span class="header-title">My Display</span>
+    <span class="header-sub">Updated now</span>
+  </div>
+  <div class="body">
+    <div class="left" style="flex-direction:row;align-items:center;justify-content:center;">
+      <div class="stat-block">
+        <span class="stat-label">Label</span>
+        <span class="stat-value">42</span>
+      </div>
+      <div class="col-sep"></div>
+      <div class="stat-block">
+        <span class="stat-label">Label</span>
+        <span class="stat-value">42</span>
+      </div>
+      <div class="col-sep"></div>
+      <div class="stat-block">
+        <span class="stat-label">Label</span>
+        <span class="stat-value">42</span>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-block">
+      <span class="footer-lbl">Label</span>
+      <span class="footer-val">Value</span>
+    </div>
+    <div class="footer-sep"></div>
+    <div class="footer-block">
+      <span class="footer-lbl">Label</span>
+      <span class="footer-val">Value</span>
+    </div>
+    <div class="footer-sep"></div>
+    <div class="footer-block">
+      <span class="footer-lbl">Label</span>
+      <span class="footer-val">Value</span>
+    </div>
+  </div>
+</div>`
+};
 
 // ═══════════════════════════════════════════════════════
 //  State
@@ -271,19 +336,19 @@ function toggleNewMenu(e) {
 }
 document.addEventListener('click', () => { document.getElementById('new-menu').style.display = 'none'; });
 
-function newFile(asTemplate) {
+function newFile(asTemplate, layout) {
   document.getElementById('new-menu').style.display = 'none';
   currentFilename = asTemplate ? 'new_template.html' : 'new_preview.html';
   isTemplate      = asTemplate;
   rawCSS          = BASE_CSS;
   cssRules        = parseCSS(rawCSS);
   showCanvas();
-  loadIntoFrame(rawCSS, NEW_BODY);
+  loadIntoFrame(rawCSS, NEW_LAYOUTS[layout] || NEW_LAYOUTS['blank']);
   renderAllClasses();
   updateModeBadge();
   document.getElementById('btn-download').disabled = false;
   document.getElementById('btn-sync').disabled = isTemplate;
-  setStatus(`New ${asTemplate ? 'template' : 'preview'} — add sections from the palette on the left`);
+  setStatus(`New ${asTemplate ? 'template' : 'preview'} (${layout}) — add sections from the palette on the left`);
 }
 
 function openFile() {
@@ -683,10 +748,14 @@ const TEMPLATES = {
 </div>`,
   'footer-block':  `<div class="footer-block"><span class="footer-lbl">Label</span><span class="footer-val">Value</span></div>`,
   'footer-sep':    `<div class="footer-sep"></div>`,
-  'elec-col-sep':  `<div class="elec-col-sep"></div>`,
-  'stat-block':    `<div style="display:flex;flex-direction:column;align-items:center;padding:8px 12px;flex:1;">
-  <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#666;margin-bottom:4px;">Label</span>
-  <span style="font-size:28px;font-weight:900;line-height:1;">42</span>
+  'col-sep':       `<div class="col-sep"></div>`,
+  'stat-block':    `<div class="stat-block">
+  <span class="stat-label">Label</span>
+  <span class="stat-value">42</span>
+</div>`,
+  'badge':         `<div class="badge">
+  <div class="badge-label">Label</div>
+  <div class="badge-value">42</div>
 </div>`,
   'section-label': `<div class="section-label">New Section</div>`,
   'custom-div':    `<div style="padding:8px;border:1px solid #ccc;border-radius:4px;">Custom block</div>`,
