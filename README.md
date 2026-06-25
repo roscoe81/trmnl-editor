@@ -23,17 +23,18 @@ TRMNL displays are 800×480 pixels. Editing HTML/Liquid templates by hand is err
 
 ## How to use
 
-### 1. Open the editor
-Go to https://roscoe81.github.io/trmnl-editor/ in any modern browser.
+### Starting from scratch
 
-### 2. Load your file
-Either:
-- Click **Open File** and select your TRMNL preview or template HTML file, or
-- **Drag and drop** the file onto the editor window
+Click **＋ New…** in the toolbar and choose **New Preview** or **New Template**. The canvas opens with a blank 800×480 layout pre-loaded with all standard TRMNL CSS classes ready to use. Add sections from the palette on the left to build your layout.
+
+### Opening an existing file
+
+Click **📂 Open…** and select your TRMNL preview or template HTML file, or **drag and drop** the file onto the editor window.
 
 The editor detects from the filename whether it's a preview or a Liquid template and handles each appropriately (files containing `template` in the filename are treated as Liquid templates).
 
-### 3. Edit
+### Editing
+
 - **Select** an element by clicking it — its classes and styles appear in the right panel
 - **Edit text** by double-clicking — press Enter or Escape to finish
 - **Reorder sections** by dragging them up or down
@@ -41,8 +42,9 @@ The editor detects from the filename whether it's a preview or a Liquid template
 - **Delete** the selected element with the Delete button in the properties panel
 - **Adjust CSS** using the class properties fields in the right panel
 
-### 4. Save your changes
-Click **Download** to save the edited file back to your computer with the original filename. For Liquid template files, all `{{merge_variables.xxx}}` and `{% %}` tags are restored exactly as they were — the file can be pasted directly into the TRMNL Private Plugin markup field without modification.
+### Saving your changes
+
+Click **⬇ Download** to save the edited file back to your computer with the original filename. For Liquid template files, all `{{merge_variables.xxx}}` and `{% %}` tags are restored exactly as they were — the file can be pasted directly into the TRMNL Private Plugin markup field without modification.
 
 ---
 
@@ -50,16 +52,16 @@ Click **Download** to save the edited file back to your computer with the origin
 
 The recommended workflow is to edit your **preview file** (which shows real data) until the layout is right, then use **⇄ Sync to Template…** to apply those structural changes to your Liquid template automatically.
 
-1. Open and edit your preview file until it looks the way you want
+1. Open or create a preview file and edit it until it looks the way you want
 2. Click **⇄ Sync to Template…** in the toolbar
 3. Select your template file when prompted
 4. The editor matches each top-level section by its CSS class, reorders the template to mirror the preview, and downloads the result
 
-**What gets synced:**
+**What gets synced automatically:**
 - Section order is updated to match the preview
 - Sections deleted in the preview are removed from the template
 - Sections added in the preview that don't exist in the template are included with a `<!-- TODO -->` comment so you know where to add Liquid variables
-- CSS changes made in the preview (borders, fonts, spacing) are carried across to the template automatically
+- CSS changes (borders, fonts, spacing) are carried across to the template
 
 ---
 

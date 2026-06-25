@@ -21,6 +21,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .btn.danger { background: #330000; border-color: #550000; color: #f88; }
 .btn.danger:hover { background: #440000; color: #faa; }
 .btn:disabled { opacity: 0.4; cursor: default; }
+.new-menu { display:none; position:absolute; top:100%; left:0; margin-top:3px; background:#2a2a2a; border:1px solid #444; border-radius:4px; z-index:200; min-width:140px; box-shadow:0 4px 12px rgba(0,0,0,0.5); }
+.new-menu-item { padding:7px 14px; font-size:11px; color:#ccc; cursor:pointer; white-space:nowrap; }
+.new-menu-item:hover { background:#333; color:#fff; }
 
 /* ── Main layout ── */
 .main { display: flex; flex: 1; min-height: 0; }
@@ -82,6 +85,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <div class="toolbar">
   <span class="toolbar-title">TRMNL Editor</span>
+  <div style="position:relative;display:inline-block;">
+    <button class="btn" onclick="toggleNewMenu(event)">＋ New…</button>
+    <div class="new-menu" id="new-menu">
+      <div class="new-menu-item" onclick="newFile(false)">New Preview</div>
+      <div class="new-menu-item" onclick="newFile(true)">New Template</div>
+    </div>
+  </div>
   <button class="btn" onclick="openFile()">📂 Open…</button>
   <span class="mode-badge none" id="mode-badge">NO FILE</span>
   <div class="spacer"></div>
@@ -176,6 +186,71 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <script>
 // ═══════════════════════════════════════════════════════
+//  Base TRMNL CSS (used for new files)
+// ═══════════════════════════════════════════════════════
+const BASE_CSS = `* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: sans-serif; background: #fff; color: #000; width: 800px; height: 480px; overflow: hidden; }
+.page { padding: 16px 20px 12px; display: flex; flex-direction: column; height: 100%; }
+.header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 10px; flex-shrink: 0; }
+.header-title { font-size: 20px; font-weight: bold; letter-spacing: 0.04em; text-transform: uppercase; }
+.header-updated { font-size: 12px; color: #555; }
+.body { display: flex; gap: 16px; flex: 1; min-height: 0; }
+.left { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.current { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 10px; flex-shrink: 0; }
+.current-temp { font-size: 64px; font-weight: 900; line-height: 1; white-space: nowrap; }
+.current-temp sup { font-size: 28px; font-weight: 400; vertical-align: super; }
+.current-detail { display: flex; flex-direction: column; gap: 3px; flex: 1; padding-top: 6px; }
+.current-desc { font-size: 16px; font-weight: bold; }
+.current-meta { font-size: 12px; color: #444; }
+.rain-badge { text-align: center; border: 2px solid #000; border-radius: 6px; padding: 5px 10px; white-space: nowrap; flex-shrink: 0; }
+.rain-badge-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; }
+.rain-badge-value { font-size: 20px; font-weight: 900; line-height: 1.2; }
+.rain-badge-unit { font-size: 10px; }
+.section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin-bottom: 6px; flex-shrink: 0; }
+.forecast { display: flex; gap: 5px; flex: 0 0 82px; min-height: 0; }
+.forecast-col { flex: 1; border: 1px solid #ccc; border-radius: 5px; display: flex; flex-direction: column; align-items: center; padding: 6px 2px 5px; }
+.forecast-hour { font-size: 11px; color: #555; margin-bottom: 3px; }
+.forecast-temp { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+.forecast-chance { font-size: 12px; }
+.forecast-chance.high { font-weight: bold; }
+.forecast-bar-wrap { width: 88%; background: #eee; border-radius: 2px; height: 5px; margin-top: auto; overflow: hidden; }
+.forecast-bar { height: 100%; background: #000; border-radius: 2px; }
+.cal-section { flex: 1; display: flex; flex-direction: column; min-height: 0; margin-top: 8px; overflow: hidden; }
+.cal-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.cal-time { font-size: 11px; color: #555; white-space: nowrap; flex-shrink: 0; min-width: 45px; }
+.cal-title { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-empty { font-size: 12px; color: #999; font-style: italic; }
+.right { width: 210px; flex-shrink: 0; border-left: 1px solid #bbb; padding-left: 14px; display: flex; flex-direction: column; }
+.sensor-section { margin-bottom: 6px; }
+.sensor-heading { font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 3px; margin-bottom: 4px; }
+.sensor-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+.sensor-name { font-size: 11px; color: #555; }
+.sensor-val { font-size: 12px; font-weight: 700; }
+.footer { border-top: 1px solid #bbb; margin-top: 6px; padding-top: 6px; display: flex; align-items: flex-start; flex-shrink: 0; min-height: 88px; }
+.footer-block { display: flex; flex-direction: column; align-items: center; flex: 0 0 90px; min-width: 0; padding-top: 6px; }
+.footer-lbl { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; margin-bottom: 1px; }
+.footer-val { font-size: 15px; font-weight: bold; }
+.footer-sep { width: 1px; height: 40px; background: #bbb; margin: 0 6px; flex-shrink: 0; }
+.elec-block { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.elec-heading { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; margin-bottom: 4px; }
+.elec-cols { display: flex; gap: 10px; align-items: flex-start; }
+.elec-col { display: flex; flex-direction: column; align-items: center; }
+.elec-col-sep { width: 1px; height: 28px; background: #ccc; align-self: center; margin: 0 4px; }
+.elec-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #777; white-space: nowrap; }
+.elec-val { font-size: 15px; font-weight: bold; white-space: nowrap; text-transform: none; }`;
+
+const NEW_BODY = `<div class="page">
+  <div class="header">
+    <span class="header-title">My Display</span>
+    <span class="header-updated">Updated now</span>
+  </div>
+  <div class="body">
+    <div class="left">
+    </div>
+  </div>
+</div>`;
+
+// ═══════════════════════════════════════════════════════
 //  State
 // ═══════════════════════════════════════════════════════
 let currentFilename = null;
@@ -188,6 +263,28 @@ let editingClass    = null;
 // ═══════════════════════════════════════════════════════
 //  File open / download  (replaces Flask server calls)
 // ═══════════════════════════════════════════════════════
+
+function toggleNewMenu(e) {
+  e.stopPropagation();
+  const m = document.getElementById('new-menu');
+  m.style.display = m.style.display === 'block' ? 'none' : 'block';
+}
+document.addEventListener('click', () => { document.getElementById('new-menu').style.display = 'none'; });
+
+function newFile(asTemplate) {
+  document.getElementById('new-menu').style.display = 'none';
+  currentFilename = asTemplate ? 'new_template.html' : 'new_preview.html';
+  isTemplate      = asTemplate;
+  rawCSS          = BASE_CSS;
+  cssRules        = parseCSS(rawCSS);
+  showCanvas();
+  loadIntoFrame(rawCSS, NEW_BODY);
+  renderAllClasses();
+  updateModeBadge();
+  document.getElementById('btn-download').disabled = false;
+  document.getElementById('btn-sync').disabled = isTemplate;
+  setStatus(`New ${asTemplate ? 'template' : 'preview'} — add sections from the palette on the left`);
+}
 
 function openFile() {
   const input = document.createElement('input');
