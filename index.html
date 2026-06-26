@@ -105,6 +105,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button class="btn" onclick="openFile()">📂 Open…</button>
   <span class="mode-badge none" id="mode-badge">NO FILE</span>
   <div class="spacer"></div>
+  <button class="btn" id="btn-makepreview" onclick="makePreviewFromTemplate()" disabled title="Generate a sample-data preview from the loaded template">⎘ Template → Preview</button>
   <button class="btn" id="btn-sync" onclick="syncToTemplate()" disabled title="Apply preview structure to template file">⇄ Sync to Template…</button>
   <button class="btn primary" id="btn-download" onclick="downloadFile()" disabled>⬇ Download</button>
 </div>
@@ -348,6 +349,7 @@ function newFile(asTemplate, layout) {
   updateModeBadge();
   document.getElementById('btn-download').disabled = false;
   document.getElementById('btn-sync').disabled = isTemplate;
+  document.getElementById('btn-makepreview').disabled = !isTemplate;
   setStatus(`New ${asTemplate ? 'template' : 'preview'} (${layout}) — add sections from the palette on the left`);
 }
 
@@ -421,6 +423,7 @@ function processAndLoad(filename, raw) {
   updateModeBadge();
   document.getElementById('btn-download').disabled = false;
   document.getElementById('btn-sync').disabled = isTemplate; // only enabled for preview files
+  document.getElementById('btn-makepreview').disabled = !isTemplate; // only enabled for template files
   setStatus(`Opened ${filename} — click to select, double-click to edit text, drag to reorder`);
 }
 
@@ -449,7 +452,7 @@ function encodeLiquid(html) {
     return `<span class="lq-tag" data-lq="${escAttr(m)}" contenteditable="false">{%​${inner}​%}</span>`;
   });
   html = html.replace(/\{\{([\s\S]*?)\}\}/g, (m, inner) => {
-    const label = inner.trim().replace(/\s*\|.*/, '');
+    const label = inner.trim().replace(/^merge_variables\./,'').replace(/\s*\|.*/,'');
     return `<span class="lq-var" data-lq="${escAttr(m)}" contenteditable="false">⟨${label}⟩</span>`;
   });
   return html;
@@ -459,6 +462,87 @@ function decodeLiquid(html) {
   html = html.replace(/<span[^>]+class="lq-tag"[^>]+data-lq="([^"]*)"[^>]*>[\s\S]*?<\/span>/g, (_, lq) => unescAttr(lq));
   html = html.replace(/<span[^>]+class="lq-var"[^>]+data-lq="([^"]*)"[^>]*>[\s\S]*?<\/span>/g, (_, lq) => unescAttr(lq));
   return html;
+}
+
+// ═══════════════════════════════════════════════════════
+//  Template → Preview  (fill Liquid vars with sample data)
+// ═══════════════════════════════════════════════════════
+
+// Optional: exact sample values for specific variable names.
+// Anything not listed here falls back to a sensible guess based on the name.
+const PREVIEW_SAMPLES = {
+  // e.g.  current_temp: '18',  description: 'Partly Cloudy',  tariff_name: 'Shoulder',
+};
+
+function humanize(key) {
+  return key.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// Guess a readable sample value from a variable name so previews look realistic.
+function smartSample(key) {
+  const k = key.toLowerCase();
+  if (/(time|updated|sunrise|sunset|clock)/.test(k)) return '12:00 PM';
+  if (/(label|hour)/.test(k))                        return '12 PM';
+  if (/(title|event|name|desc|description|station|tariff)/.test(k)) return humanize(key);
+  if (/(temp|dew|feels)/.test(k))                    return '18';
+  if (/(chance|humidity|percent|pct|uv|level|pm25|pm10|pm2)/.test(k)) return '42';
+  if (/(rate|cost|price)/.test(k))                   return '0.00';
+  if (/(rain|amount|kw|kwh|barometer|pressure|hpa|wind|gust)/.test(k)) return '0.0';
+  return humanize(key);
+}
+
+function applyLiquidFilters(value, filterStr) {
+  filterStr.split('|').forEach(f => {
+    const name = f.trim().split(':')[0].trim().toLowerCase();
+    if (name === 'upcase')     value = String(value).toUpperCase();
+    if (name === 'downcase')   value = String(value).toLowerCase();
+    if (name === 'capitalize') value = String(value).charAt(0).toUpperCase() + String(value).slice(1);
+  });
+  return value;
+}
+
+function sampleFor(inner) {
+  const pipeIdx = inner.indexOf('|');
+  const key     = (pipeIdx >= 0 ? inner.slice(0, pipeIdx) : inner).trim();
+  let value     = PREVIEW_SAMPLES.hasOwnProperty(key) ? PREVIEW_SAMPLES[key] : smartSample(key);
+  if (pipeIdx >= 0) value = applyLiquidFilters(value, inner.slice(pipeIdx + 1));
+  return value;
+}
+
+function templateToPreview(html) {
+  html = html.replace(/\{%-?[\s\S]*?-?%\}/g, '');          // drop control tags ({% if %} etc.)
+  html = html.replace(/\{\{([\s\S]*?)\}\}/g, (m, inner) => sampleFor(inner)); // fill output tags
+  return html;
+}
+
+async function makePreviewFromTemplate() {
+  if (!currentFilename || !isTemplate) {
+    setStatus('Load a template file first, then click Template → Preview');
+    return;
+  }
+  setStatus('Generating preview from template…');
+  let content;
+  try {
+    content = await getFrameContent();
+  } catch (e) {
+    setStatus('Could not read template: ' + e.message);
+    return;
+  }
+  const body = templateToPreview(decodeLiquid(content.body));
+
+  let name = /template/i.test(currentFilename)
+    ? currentFilename.replace(/template/i, 'preview')
+    : currentFilename.replace(/\.html?$/i, '') + '_preview.html';
+
+  currentFilename = name;
+  isTemplate      = false;            // we are now editing a preview (CSS is shared)
+  loadIntoFrame(rawCSS, body);
+  renderAllClasses();
+  updateModeBadge();
+  document.getElementById('btn-download').disabled    = false;
+  document.getElementById('btn-sync').disabled        = false; // preview → sync now available
+  document.getElementById('btn-makepreview').disabled = true;  // already in preview mode
+  setStatus(`Created preview "${name}" — edit the layout, then Download or Sync to Template`);
 }
 
 // ═══════════════════════════════════════════════════════

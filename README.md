@@ -42,6 +42,28 @@ Click **📂 Open…** and select your TRMNL preview or template HTML file, or *
 
 The editor detects from the filename whether it's a preview or a Liquid template (files containing `template` in the filename are treated as Liquid templates).
 
+### Creating a preview from a template
+
+If you only have a Liquid template and want a preview to edit, open the template and click **⎘ Template → Preview**. The editor will:
+
+- Remove all Liquid control tags (`{% ... %}`)
+- Replace every `{{ variable }}` with a sample value (and apply any `upcase` / `downcase` / `capitalize` filter)
+- Switch into **Preview** mode with a `*_preview.html` filename, ready to edit and **Download** or **Sync to Template…**
+
+Sample values are guessed from each variable's name — for example `*_temp` → `18`, `*_chance` / `*_humidity` → `42`, `*_time` / `sunrise` → `12:00 PM`, and descriptive names like `description` or `tariff_name` become a humanised version of the name. Filters are applied, so `{{ tariff_name | upcase }}` renders as `SHOULDER`.
+
+For exact sample values, edit the `PREVIEW_SAMPLES` map near the top of the script in `index.html`:
+
+```js
+const PREVIEW_SAMPLES = {
+  current_temp: '18',
+  description:  'Partly Cloudy',
+  tariff_name:  'Shoulder',
+};
+```
+
+Any key listed there overrides the name-based guess. Values not listed fall back to the guess, so you only need to add the ones you care about.
+
 ### Editing
 
 - **Select** an element by clicking it — its classes and styles appear in the right panel
