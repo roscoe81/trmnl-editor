@@ -468,10 +468,41 @@ function decodeLiquid(html) {
 //  Template → Preview  (fill Liquid vars with sample data)
 // ═══════════════════════════════════════════════════════
 
-// Optional: exact sample values for specific variable names.
-// Anything not listed here falls back to a sensible guess based on the name.
+// Exact sample values for specific variable names. These are chosen to match
+// the length/shape of real data (long event names, full wind strings, etc.) so
+// the generated preview reveals genuine fit/overflow problems. Anything not
+// listed here falls back to a sensible guess based on the variable name.
+// Edit these to suit your own display.
 const PREVIEW_SAMPLES = {
-  // e.g.  current_temp: '18',  description: 'Partly Cloudy',  tariff_name: 'Shoulder',
+  // Current conditions
+  updated: '2:31 PM, 26 Jun',
+  current_temp: '18',
+  description: 'Showers Increasing',
+  feels_like: '15',
+  wind: '20 km/h SW',
+  humidity: '72',
+  rain_since_9am: '0.4',
+  // Hourly rain forecast
+  h0_label: '3 PM', h0_temp: '18', h0_chance: '5',
+  h1_label: '4 PM', h1_temp: '17', h1_chance: '15',
+  h2_label: '5 PM', h2_temp: '16', h2_chance: '55',
+  h3_label: '6 PM', h3_temp: '15', h3_chance: '70',
+  h4_label: '7 PM', h4_temp: '14', h4_chance: '40',
+  h5_label: '8 PM', h5_temp: '14', h5_chance: '20',
+  // Today's events (use realistic long titles to stress-test the layout)
+  cal_0_time: 'All day', cal_0_title: "Ross's Birthday",
+  cal_1_time: '9:00 AM', cal_1_title: 'Plumber - kitchen tap repair',
+  cal_2_time: '2:30 PM', cal_2_title: 'Physio appointment',
+  cal_3_time: '7:00 PM', cal_3_title: 'Dinner at Cafe Sydney',
+  cal_4_time: '', cal_4_title: '',
+  // Sensors
+  front_balcony_temp: '16.4', front_balcony_humidity: '78', front_balcony_dewpoint: '12.8', front_balcony_barometer: '1018', front_balcony_pm25: '4.2',
+  rear_balcony_temp: '15.9', rear_balcony_humidity: '81', rear_balcony_dewpoint: '12.6', rear_balcony_barometer: '1017', rear_balcony_pm25: '3.8',
+  kitchen_temp: '21.2', kitchen_humidity: '54', kitchen_dewpoint: '11.6', kitchen_pm25: '3.1',
+  // Footer
+  sunrise: '7:02 AM', sunset: '5:18 PM',
+  tariff_name: 'Shoulder', tariff_rate: '28.4c/kWh',
+  electricity_kw: '2.34', electricity_cost_ph: '$0.67/hr',
 };
 
 function humanize(key) {

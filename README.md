@@ -50,19 +50,21 @@ If you only have a Liquid template and want a preview to edit, open the template
 - Replace every `{{ variable }}` with a sample value (and apply any `upcase` / `downcase` / `capitalize` filter)
 - Switch into **Preview** mode with a `*_preview.html` filename, ready to edit and **Download** or **Sync to Template…**
 
-Sample values are guessed from each variable's name — for example `*_temp` → `18`, `*_chance` / `*_humidity` → `42`, `*_time` / `sunrise` → `12:00 PM`, and descriptive names like `description` or `tariff_name` become a humanised version of the name. Filters are applied, so `{{ tariff_name | upcase }}` renders as `SHOULDER`.
-
-For exact sample values, edit the `PREVIEW_SAMPLES` map near the top of the script in `index.html`:
+Sample values come from the `PREVIEW_SAMPLES` map near the top of the script in `index.html`. The map ships pre-filled with realistic values for the Northcliff weather display — chosen to match the **length and shape of real data** (long calendar event names, full wind strings like `20 km/h SW`, etc.) so the generated preview reveals genuine fit and overflow problems before you push to the device.
 
 ```js
 const PREVIEW_SAMPLES = {
   current_temp: '18',
-  description:  'Partly Cloudy',
-  tariff_name:  'Shoulder',
+  description:  'Showers Increasing',
+  wind:         '20 km/h SW',
+  cal_1_title:  'Plumber - kitchen tap repair',
+  // ...one entry per variable
 };
 ```
 
-Any key listed there overrides the name-based guess. Values not listed fall back to the guess, so you only need to add the ones you care about.
+Edit these to suit your own display. Any variable **not** listed falls back to a guess based on its name — `*_temp` → `18`, `*_chance` / `*_humidity` → `42`, `*_time` / `sunrise` → `12:00 PM`, and descriptive names become a humanised version of the name. Liquid filters are applied either way, so `{{ tariff_name | upcase }}` renders as `SHOULDER`.
+
+> **Tip:** The name-based guesses are deliberately generic and short, so a preview built purely from guesses won't stress-test tight layouts. For a faithful preview, give each variable a representative value in `PREVIEW_SAMPLES` once — then every **Template → Preview** afterwards is accurate.
 
 ### Editing
 
