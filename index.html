@@ -449,7 +449,7 @@ function encodeLiquid(html) {
     return `<span class="lq-tag" data-lq="${escAttr(m)}" contenteditable="false">{%​${inner}​%}</span>`;
   });
   html = html.replace(/\{\{([\s\S]*?)\}\}/g, (m, inner) => {
-    const label = inner.trim().replace(/^merge_variables\./,'').replace(/\s*\|.*/,'');
+    const label = inner.trim().replace(/\s*\|.*/, '');
     return `<span class="lq-var" data-lq="${escAttr(m)}" contenteditable="false">⟨${label}⟩</span>`;
   });
   return html;

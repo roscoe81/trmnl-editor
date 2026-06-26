@@ -17,7 +17,7 @@ TRMNL displays are 800×480 pixels. Editing HTML/Liquid templates by hand is err
 - **Delete** selected elements
 - **Edit CSS class properties** directly in the properties panel
 - **Edit inline styles** on the selected element
-- Work with both **preview files** (hardcoded sample data) and **Liquid template files** (with `{{merge_variables.xxx}}` and `{% %}` tags preserved losslessly)
+- Work with both **preview files** (hardcoded sample data) and **Liquid template files** (with `{{variable}}` and `{% %}` tags preserved losslessly)
 
 ---
 
@@ -53,7 +53,7 @@ The editor detects from the filename whether it's a preview or a Liquid template
 
 ### Saving your changes
 
-Click **⬇ Download** to save the edited file back to your computer with the original filename. For Liquid template files, all `{{merge_variables.xxx}}` and `{% %}` tags are restored exactly as they were — the file can be pasted directly into the TRMNL Private Plugin markup field without modification.
+Click **⬇ Download** to save the edited file back to your computer with the original filename. For Liquid template files, all `{{variable}}` and `{% %}` tags are restored exactly as they were — the file can be pasted directly into the TRMNL Private Plugin markup field without modification.
 
 ---
 
@@ -80,19 +80,21 @@ The recommended workflow is to edit your **preview file** (which shows real data
 
 **Output tags** `{{ }}` insert a value:
 ```
-{{ merge_variables.temperature }}              → 22.5
-{{ merge_variables.temperature | round: 1 }}   → 22.5 (rounded)
-{{ merge_variables.name | upcase }}            → LIVING ROOM
-{{ merge_variables.updated | date: "%I:%M %p" }} → 2:31 PM
+{{ temperature }}                      → 22.5
+{{ temperature | round: 1 }}           → 22.5 (rounded)
+{{ name | upcase }}                    → LIVING ROOM
+{{ updated | date: "%I:%M %p" }}       → 2:31 PM
 ```
 
 **Control tags** `{% %}` add logic:
 ```
-{% if merge_variables.temp > 30 %}Too hot!{% endif %}
-{% for item in merge_variables.sensors %}{{ item.name }}: {{ item.value }}{% endfor %}
+{% if temp > 30 %}Too hot!{% endif %}
+{% for item in sensors %}{{ item.name }}: {{ item.value }}{% endfor %}
 ```
 
-**How your data gets there:** You POST a JSON payload to TRMNL's API for your plugin. Each key in the JSON becomes available as `merge_variables.key` in the template. So if you push `{"temperature": 22.5, "condition": "Sunny"}`, then `{{ merge_variables.temperature }}` outputs `22.5`.
+> **Note:** TRMNL's Liquid engine does not support `{% endif %}` or `{% endfor %}` block-closing tags. Avoid conditional or loop blocks in templates — use unconditional HTML instead, and send all slots as separate variables (e.g. `cal_0_title`, `cal_1_title` rather than a list).
+
+**How your data gets there:** You POST a JSON payload to TRMNL's API for your plugin. Each key in the JSON becomes available directly as a variable in the template. So if you push `{"temperature": 22.5, "condition": "Sunny"}`, then `{{ temperature }}` outputs `22.5`.
 
 When editing a template file in this editor, Liquid output tags are displayed as non-editable chips (e.g. `⟨temperature⟩`) and control tags are shown inline — both are restored faithfully on download.
 
