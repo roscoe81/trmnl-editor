@@ -447,15 +447,19 @@ function escAttr(s)   { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').re
 function unescAttr(s) { return s.replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&'); }
 
 function encodeLiquid(html) {
-  html = html.replace(/\{%-?\s*[\s\S]*?\s*-?%\}/g, m => {
-    const inner = m.replace(/^\{%-?\s*/,'').replace(/\s*-?%\}$/,'');
-    return `<span class="lq-tag" data-lq="${escAttr(m)}" contenteditable="false">{%​${inner}​%}</span>`;
-  });
-  html = html.replace(/\{\{([\s\S]*?)\}\}/g, (m, inner) => {
+  // Tokenise so that Liquid INSIDE an HTML tag's attributes (e.g.
+  // style="width:{{chance}}%") is left untouched — turning it into a chip
+  // there would corrupt the tag. Only Liquid in text content becomes a chip.
+  return html.replace(/(<[^>]*>)|(\{%-?\s*[\s\S]*?\s*-?%\})|(\{\{[\s\S]*?\}\})/g, (m, tag, ctrl, out) => {
+    if (tag) return tag;                                    // whole HTML tag — leave as-is
+    if (ctrl) {
+      const inner = ctrl.replace(/^\{%-?\s*/,'').replace(/\s*-?%\}$/,'');
+      return `<span class="lq-tag" data-lq="${escAttr(ctrl)}" contenteditable="false">{%​${inner}​%}</span>`;
+    }
+    const inner = out.slice(2, -2);
     const label = inner.trim().replace(/^merge_variables\./,'').replace(/\s*\|.*/,'');
-    return `<span class="lq-var" data-lq="${escAttr(m)}" contenteditable="false">⟨${label}⟩</span>`;
+    return `<span class="lq-var" data-lq="${escAttr(out)}" contenteditable="false">⟨${label}⟩</span>`;
   });
-  return html;
 }
 
 function decodeLiquid(html) {
